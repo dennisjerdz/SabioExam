@@ -1,0 +1,13 @@
+﻿@using SabioExam.SHARED.Models
+@model DiscountHubUseCodeRequest
+
+<form id="discount-use" method="post" class="mt-4">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <span asp-validation-for="Code" class="text-danger"></span>
+        <input asp-for="Code" class="form-control bg-dark text-white" placeholder="Code"/>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Use Code" class="btn btn-primary mt-4" />
+    </div>
+</form>

@@ -1,0 +1,90 @@
+﻿@page
+@using SabioExam.SHARED.Utilities.Constants
+@model IndexModel
+@{
+    ViewData["Title"] = "MAIN";
+}
+
+<div class="row" style="height:600px;">
+    <div class="col-md-5">
+        <div class="bg-dark bg-opacity-50 p-4 rounded-3 mb-4">
+            <h3 class="text-white">Generate Discount Codes</h3>
+            <partial name="_FormDiscountGenerate" Model="null"/>
+        </div>
+
+        <div class="bg-dark bg-opacity-50 p-4 rounded-3">
+            <h3 class="text-white">Use Discount Code</h3>
+            <partial name="_FormDiscountUse" Model="null" />
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div id="log" class="text-wrap text-break overflow-auto bg-dark bg-opacity-75 p-5 rounded-3" style="height:600px;">
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("@ViewData["HubUrl"]")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+        
+        let logCount = 0;
+
+        connection.on("@DiscountHubFunctions.CLIENT_MESSAGE_RECEIVE", (user, message) => {
+            $("#log").append(`<p class='text-secondary mb-0'>${logCount++} ${user}: ${message}</p>`);
+        });
+
+        connection.on("@DiscountHubFunctions.CLIENT_DISCOUNT_GENERATE_RESULT", (response) => {
+            $("#log").append(`<p class='text-white mb-0'>${logCount++} @DiscountHubFunctions.CLIENT_DISCOUNT_GENERATE_RESULT - ${response.result}</p>`);
+        });
+
+        connection.on("@DiscountHubFunctions.CLIENT_DISCOUNT_USE_RESULT", (response) => {
+            $("#log").append(`<p class='text-white mb-0'>${logCount++} @DiscountHubFunctions.CLIENT_DISCOUNT_USE_RESULT - ${response.result}</p>`);
+        });
+
+        connection.start().then(() => {
+            $("#log").append(`<p class='text-success mb-0'>${logCount++} Successfully connected to DiscountHub.`);
+            connection.invoke("@DiscountHubFunctions.SERVER_MESSAGE_SEND", "Hello World");
+        })
+        .catch(error => {
+            $("#log").append(`<p class='text-danger mb-0'>${logCount++} Connection Failed: ${error}</p>`);
+        });
+
+        $(document).ready(function(){
+
+            // GENERATE DISCOUNT CODE
+            $("#discount-generate").submit(function(e){
+                e.preventDefault();
+
+                let count = $(this).find("#Count").val();
+                let length = $(this).find("#Length").val();
+                let request = {count:Number(count),length:Number(length)};
+
+                if($(this).valid()) {
+                    connection.invoke("@DiscountHubFunctions.SERVER_DISCOUNT_GENERATE", request).catch(function (err) {
+                        console.error("SignalR invoke error:", err.toString());
+                    });;
+                }
+            });
+
+            // USE DISCOUNT CODE
+            $("#discount-use").submit(function(e){
+                e.preventDefault();
+
+                let code = $(this).find("#Code").val();
+                let request = {code:code};
+
+                if($(this).valid()) {
+                    connection.invoke("@DiscountHubFunctions.SERVER_DISCOUNT_USE", request).catch(function (err) {
+                        console.error("SignalR invoke error:", err.toString());
+                    });;
+                }
+            });
+        });
+    </script>
+}
